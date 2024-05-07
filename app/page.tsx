@@ -11,7 +11,7 @@ const APP_ID = '11920699-e06d-4d77-87a3-0767b7cfa604'
 type Message = {
   id: string
   text: string
-  handle: handle
+  handle: string
   createdAt: number
 }
 
