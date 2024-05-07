@@ -1,7 +1,7 @@
 'use client'
 
 import { init, tx, id } from '@instantdb/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import randomHandle from './utils/randomHandle'
 
@@ -19,7 +19,9 @@ type Schema = {
 }
 
 type RoomSchema = {
-  messages: {}
+  messages: {
+    presence: { handle: string }
+  }
 }
 
 
@@ -43,6 +45,11 @@ function App() {
   // Read Data
   const { isLoading, error, data } = db.useQuery({ messages: {} })
   const [editId, setEditId] = useState(null)
+  const { user, peers, publishPresence } = room.usePresence()
+  useEffect(() => {
+    publishPresence({ handle })
+  })
+
   if (isLoading) {
     return <div>Fetching data...</div>
   }
@@ -50,6 +57,7 @@ function App() {
     return <div>Error fetching data: {error.message}</div>
   }
   const { messages } = data
+  const online = [user, ...Object.values(peers)].map((u) => u.handle).join(', ')
   return (
     <div className='p-4 space-y-6 w-full sm:w-[640px] mx-auto'>
       <h1 className='text-2xl font-bold'>Logged in as: {handle}</h1>
@@ -104,7 +112,7 @@ function App() {
           </div>
         ))}
       </div>
-      <div>Who's online:</div>
+      <div>Who's online: {online}</div>
     </div>
   )
 }
