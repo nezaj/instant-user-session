@@ -11,6 +11,7 @@ const APP_ID = '11920699-e06d-4d77-87a3-0767b7cfa604'
 type Message = {
   id: string
   text: string
+  handle: handle
   createdAt: number
 }
 
@@ -46,6 +47,8 @@ function App() {
   const { isLoading, error, data } = db.useQuery({ messages: {} })
   const [editId, setEditId] = useState(null)
   const { user, peers, publishPresence } = room.usePresence()
+  const { active, inputProps } = room.useTypingIndicator('messageBar')
+
   useEffect(() => {
     publishPresence({ handle })
   })
@@ -58,27 +61,38 @@ function App() {
   }
   const { messages } = data
   const online = [user, ...Object.values(peers)].map((u) => u.handle).join(', ')
+
+  const onKeyDown = (e: any) => {
+    inputProps.onKeyDown(e);
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      addMessage(e.target.value, handle)
+      e.target.value = ''
+    }
+  };
+
   return (
     <div className='p-4 space-y-6 w-full sm:w-[640px] mx-auto'>
       <h1 className='text-2xl font-bold'>Logged in as: {handle}</h1>
-      <div className="flex justify-between border-b-2 border-b-gray-500 pb-2 space-x-2">
-        <form
-          className="flex flex-1"
-          onSubmit={(e) => {
-            e.preventDefault()
-            addMessage(e.target[0].value)
-            e.target[0].value = ''
-          }}
-        >
-          <input
-            className="flex-1 px-2 py-1"
-            autoFocus
-            placeholder="Enter some message..."
-            type="text"
-          />
-        </form>
-        <Button onClick={() => deleteAllMessages(messages)}>Delete All</Button>
+      <div className="flex flex-col space-y-2">
+        <div className="flex justify-between  border-b-2 border-b-gray-500 pb-2 space-x-2">
+          <div className="flex flex-1" >
+            <input
+              className="flex-1 px-2 py-1"
+              autoFocus
+              placeholder="Enter some message..."
+              onKeyDown={onKeyDown}
+              onBlur={inputProps.onBlur}
+              type="text"
+            />
+          </div>
+          <Button onClick={() => deleteAllMessages(messages)}>Delete All</Button>
+        </div>
+        <div className="truncate text-xs text-gray-500">
+          {active.length ? typingInfo(active) : <>&nbsp;</>}
+        </div>
       </div>
+
       <div className="space-y-2">
         {messages.map((message) => (
           <div key={message.id}>
@@ -102,7 +116,7 @@ function App() {
               </form>
             ) : (
               <div className="flex justify-between">
-                <p>{handle}: {message.text}</p>
+                <p>{message.handle}: {message.text}</p>
                 <span className="space-x-4">
                   <Button onClick={() => setEditId(message.id)}>Edit</Button>
                   <Button onClick={() => deleteMessage(message)}>Delete</Button>
@@ -117,12 +131,23 @@ function App() {
   )
 }
 
+// Ephemeral
+function typingInfo(typing: { handle: string }[]) {
+  if (typing.length === 0) return null;
+  if (typing.length === 1) return `${typing[0].handle} is typing...`;
+  if (typing.length === 2)
+    return `${typing[0].handle} and ${typing[1].handle} are typing...`;
+
+  return `${typing[0].handle} and ${typing.length - 1} others are typing...`;
+}
+
 // Write Data
 // ---------
-function addMessage(text: string) {
+function addMessage(text: string, handle: string) {
   db.transact(
     tx.messages[id()].update({
       text,
+      handle,
       createdAt: Date.now(),
     })
   )
