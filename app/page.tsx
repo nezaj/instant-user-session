@@ -11,7 +11,7 @@ import { useState, useRef, useEffect } from 'react'
 function Button({ children, onClick }) {
   return (
     <button
-      className="px-2 py-1 outline hover:bg-gray-200"
+      className="px-2 py-1 outline hover:bg-gray-200 focus:outline-amber-500 focus:outline-2"
       onClick={onClick}
     >
       {children}
@@ -75,6 +75,7 @@ function App() {
     inputRef.current.focus()
   }
   const onKeyDown = (e: any) => {
+    inputProps.onKeyDown(e)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       onSubmit()
@@ -90,15 +91,15 @@ function App() {
           <div className="flex flex-1" >
             <input
               ref={inputRef}
-              className="flex-1 py-1 px-2"
+              className="flex-1 py-1 px-2 focus:outline-2 focus:outline-amber-500"
               autoFocus
               placeholder="Enter some message..."
+              onBlur={inputProps.onBlur}
               onKeyDown={onKeyDown}
               type="text"
             />
           </div>
           <Button onClick={onSubmit}>Submit</Button>
-
         </div>
         <div className="truncate text-xs text-gray-500">
           {active.length ? typingInfo(active) : <>&nbsp;</>}
